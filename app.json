@@ -1,0 +1,50 @@
+{
+  "project_title": "AI-Powered Nutrition Agent — Personalized Dietary Guidance System",
+  "domain": "Healthcare / AI & Data Science",
+  "technology": "Agentic AI / Multi-Agent Systems",
+  "program": "IBM SkillsBuild x Edunet Foundation x AICTE University Engagement 2026",
+  "student": {
+    "name": "Yashwanth Kumar H C",
+    "email": "yashwanthg854@gmail.com",
+    "mobile": "+91 9787863730",
+    "institution": "Sri Sairam College of Engineering, Bengaluru",
+    "course": "B.E. Electrical and Electronics Engineering (2023–2027)",
+    "linkedin": "linkedin.com/in/yashwanth-kumar-h-c-3aabb8307",
+    "github": "github.com/yashwanthg854-coder"
+  },
+  "tech_stack": [
+    "IBM Granite Models (granite-3.2-8b-instruct)",
+    "IBM Cloud",
+    "IBM watsonx.ai",
+    "IBM watsonx Orchestrate",
+    "LangFlow",
+    "Retrieval-Augmented Generation (RAG)",
+    "Vector Database (FAISS / Chroma)",
+    "USDA Food Data Central",
+    "WHO Nutrition Guidelines"
+  ],
+  "agents": [
+    {
+      "name": "Nutrition Knowledge Agent",
+      "role": "Retrieves and summarizes nutritional information using RAG"
+    },
+    {
+      "name": "Diet Recommendation Agent",
+      "role": "Generates personalized meal plans based on age, health conditions, dietary preferences, and fitness goals"
+    },
+    {
+      "name": "Health Advisory Agent",
+      "role": "Provides preventive health suggestions including disease-specific diets"
+    },
+    {
+      "name": "Food Log & Feedback Agent",
+      "role": "Logs meals via text, voice, or images and delivers instant nutritional analysis"
+    }
+  ],
+  "deployment": "IBM Cloud Lite",
+  "files": [
+    "app.json",
+    "yourproblemstatement.pdf",
+    "NutritionAgent_Final.pptx"
+  ]
+}
