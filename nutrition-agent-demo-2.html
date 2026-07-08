@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nutrition Agent — IBM watsonx Orchestrate Demo</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #05100d; height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+  #app { width: 100%; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 12px; }
+  .shell { width: 100%; max-width: 1100px; height: 82vh; min-height: 560px; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; border: 1px solid #1a2724; box-shadow: 0 20px 60px rgba(0,0,0,0.5); background:#0a1210; }
+  .keybar { background: #0d1614; border-bottom: 1px solid #1a2724; padding: 8px 16px; display: flex; align-items: center; gap: 8px; }
+  .keybar span { font-size: 11px; color: #7c9691; white-space: nowrap; }
+  .keybar input { flex: 1; background: #141f1c; border: 1px solid #2a3d39; border-radius: 6px; padding: 5px 10px; font-size: 12px; color: white; outline: none; }
+  .keybar button { background: none; border: none; color: #5fb8a8; font-size: 11px; cursor: pointer; }
+  .body { flex: 1; display: flex; min-height: 0; }
+  .sidebar { width: 190px; background: #0d1614; border-right: 1px solid #1a2724; display: flex; flex-direction: column; padding: 16px 0; flex-shrink: 0; }
+  .brand { padding: 0 16px; margin-bottom: 24px; }
+  .brand div:first-child { color: white; font-weight: 700; font-size: 14px; }
+  .brand div:nth-child(2) { color: #00A88F; font-weight: 700; font-size: 14px; }
+  .brand div:last-child { font-size: 10px; color: #5f7871; margin-top: 4px; }
+  .nav { display: flex; flex-direction: column; gap: 4px; padding: 0 8px; }
+  .nav button { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; font-size: 14px; cursor: pointer; border: none; text-align: left; background: transparent; color: #8fa89f; font-family: inherit; }
+  .nav button.active { background: rgba(0,168,143,0.1); color: white; }
+  .footer-note { margin-top: auto; padding: 16px; border-top: 1px solid #1a2724; margin: 16px 8px 0; font-size: 10px; color: #5f7871; line-height: 1.6; }
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .view.active { display: flex; }
+
+  /* Chat */
+  .chat-header { padding: 16px 24px; border-bottom: 1px solid #1f2b29; background: #0d1614; }
+  .chat-header .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #5fb8a8; font-weight: 600; }
+  .chat-header .title { color: white; font-size: 18px; font-weight: 600; margin-top: 2px; }
+  .chat-scroll { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; background: #0a1210; }
+  .msg-row { display: flex; gap: 12px; }
+  .msg-row.user { flex-direction: row-reverse; }
+  .avatar { width: 32px; height: 32px; border-radius: 8px; background: #00A88F; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+  .bubble { max-width: 75%; border-radius: 16px; padding: 12px 16px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+  .bubble.assistant { background: #141f1c; color: #dfeae7; border: 1px solid #233330; border-top-left-radius: 4px; }
+  .bubble.user { background: #0F62FE; color: white; border-top-right-radius: 4px; }
+  .thinking { color: #8fa89f; font-size: 13px; }
+  .chat-input-area { padding: 12px 24px 16px; background: #0d1614; border-top: 1px solid #1f2b29; }
+  .quick-prompts { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .quick-prompts button { font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid #2a3d39; background: transparent; color: #a9c4bc; cursor: pointer; font-family: inherit; }
+  .chat-form { display: flex; align-items: center; gap: 8px; background: #141f1c; border: 1px solid #2a3d39; border-radius: 999px; padding: 6px 6px 6px 16px; }
+  .chat-form input { flex: 1; background: transparent; border: none; outline: none; font-size: 14px; color: white; }
+  .send-btn { width: 32px; height: 32px; border-radius: 50%; background: #0F62FE; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white; font-size: 14px; }
+  .send-btn:disabled { opacity: 0.4; }
+
+  /* Dashboard */
+  .dash { height: 100%; overflow-y: auto; background: #0a1210; padding: 20px 24px; }
+  .dash .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #5fb8a8; font-weight: 600; }
+  .dash h2 { color: white; font-size: 18px; font-weight: 600; margin: 4px 0 16px; }
+  .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .stat-card { background: #111c19; border: 1px solid #22322e; border-radius: 12px; padding: 12px 16px; flex: 1; min-width: 110px; }
+  .stat-card .label-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .stat-card .label-row span.icon { font-size: 13px; }
+  .stat-card .label-row span.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #7c9691; }
+  .stat-card .value { font-size: 20px; font-weight: 600; color: white; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } .sidebar { width: 130px; } }
+  .card { background: #111c19; border: 1px solid #22322e; border-radius: 12px; padding: 16px; }
+  .card-title { font-size: 13px; color: #a9c4bc; margin-bottom: 8px; font-weight: 500; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding-top: 10px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+  .bar-fill { width: 100%; background: #00A88F; border-radius: 4px 4px 0 0; transition: height 0.4s; }
+  .bar-label { font-size: 10px; color: #5f7871; margin-top: 6px; }
+  .bar-val { font-size: 9px; color: #7c9691; margin-bottom: 2px; }
+  .row-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .add-btn { display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 5px 10px; border-radius: 999px; background: #00A88F; color: #04211c; font-weight: 600; border: none; cursor: pointer; font-family: inherit; }
+  .log-form { margin-bottom: 12px; background: #0d1614; border: 1px solid #22322e; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .log-form input { background: #141f1c; border: 1px solid #2a3d39; border-radius: 6px; padding: 6px 10px; font-size: 12px; color: white; outline: none; font-family: inherit; }
+  .log-form button { background: #0F62FE; color: white; font-size: 12px; font-weight: 600; padding: 6px 0; border-radius: 6px; border: none; cursor: pointer; font-family: inherit; }
+  .log-list { max-height: 220px; overflow-y: auto; }
+  .log-item { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e2c29; padding: 8px 0; font-size: 13px; }
+  .log-item .meal { color: #dfeae7; }
+  .log-item .desc { color: #7c9691; font-size: 11px; }
+  .log-item .kcal { color: #5fb8a8; font-weight: 500; }
+  .suggestion-box { background: #0d211c; border: 1px solid #1e4a3d; border-radius: 12px; padding: 16px; }
+  .suggestion-box .eyebrow { margin-bottom: 4px; }
+  .suggestion-box p { font-size: 14px; color: #dfeae7; line-height: 1.6; margin: 0; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: #22322e; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="shell">
+    <div class="keybar">
+      <span>Anthropic API Key (optional):</span>
+      <input id="apiKeyInput" type="password" placeholder="Leave blank to use built-in demo responses" />
+      <button id="toggleKeyVisibility">Show</button>
+    </div>
+    <div class="body">
+      <div class="sidebar">
+        <div class="brand">
+          <div>IBM watsonx</div>
+          <div>Orchestrate</div>
+          <div>Nutrition Agent Demo</div>
+        </div>
+        <div class="nav">
+          <button id="navChat" class="active">💬 Chat</button>
+          <button id="navDash">📊 Dashboard</button>
+        </div>
+        <div class="footer-note">Deployed on IBM Cloud Lite<br />IBM SkillsBuild × AICTE-2026</div>
+      </div>
+      <div class="main">
+        <div id="chatView" class="view active">
+          <div class="chat-header">
+            <div class="eyebrow">IBM watsonx Orchestrate › Nutrition Agent</div>
+            <div class="title">Chat</div>
+          </div>
+          <div id="chatScroll" class="chat-scroll"></div>
+          <div class="chat-input-area">
+            <div class="quick-prompts">
+              <button data-prompt="Suggest a diabetic-friendly dinner">Suggest a diabetic-friendly dinner</button>
+              <button data-prompt="Create a 7-day weight-loss plan">Create a 7-day weight-loss plan</button>
+              <button data-prompt="Which foods are high in plant protein?">Which foods are high in plant protein?</button>
+            </div>
+            <form id="chatForm" class="chat-form">
+              <input id="chatInput" placeholder="Ask me about nutrition, meal plans, or food data…" autocomplete="off" />
+              <button type="submit" id="sendBtn" class="send-btn">➤</button>
+            </form>
+          </div>
+        </div>
+
+        <div id="dashView" class="view">
+          <div class="dash">
+            <div class="eyebrow">IBM watsonx Orchestrate › Food Log &amp; Nutritional Dashboard</div>
+            <h2>Today's Overview</h2>
+            <div class="stat-row">
+              <div class="stat-card"><div class="label-row"><span class="icon">🔥</span><span class="label">Calories Today</span></div><div class="value" id="statKcal">2440</div></div>
+              <div class="stat-card"><div class="label-row"><span class="icon">🥩</span><span class="label">Protein</span></div><div class="value">142g</div></div>
+              <div class="stat-card"><div class="label-row"><span class="icon">🌾</span><span class="label">Carbohydrates</span></div><div class="value">310g</div></div>
+              <div class="stat-card"><div class="label-row"><span class="icon">💧</span><span class="label">Fats</span></div><div class="value">88g</div></div>
+            </div>
+            <div class="grid2">
+              <div class="card">
+                <div class="card-title">Weekly Caloric Intake</div>
+                <div class="bar-chart" id="barChart"></div>
+              </div>
+              <div class="card">
+                <div class="row-between">
+                  <div class="card-title" style="margin:0;">Today's Meal Log</div>
+                  <button class="add-btn" id="toggleLogForm">+ Log Meal</button>
+                </div>
+                <form id="logForm" class="log-form" style="display:none;">
+                  <input id="mealName" placeholder="Meal type (e.g. Snack)" />
+                  <input id="mealDesc" placeholder="Description" />
+                  <input id="mealKcal" type="number" placeholder="Calories" />
+                  <button type="submit">Save Entry</button>
+                </form>
+                <div class="log-list" id="logList"></div>
+              </div>
+            </div>
+            <div class="suggestion-box">
+              <div class="eyebrow">AI Nutritional Suggestion</div>
+              <p id="suggestionText"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var TARGET = 3000;
+  var log = [
+    { id: 1, meal: "Breakfast", desc: "Oats + Banana Smoothie", kcal: 620 },
+    { id: 2, meal: "Lunch", desc: "Paneer Tikka + Brown Rice", kcal: 780 },
+    { id: 3, meal: "Snack", desc: "Mixed Nuts + Yogurt", kcal: 310 },
+    { id: 4, meal: "Dinner", desc: "Tofu Stir-fry + Quinoa", kcal: 730 }
+  ];
+  var weekly = [
+    { day: "Mon", kcal: 2500 }, { day: "Tue", kcal: 2750 }, { day: "Wed", kcal: 2600 },
+    { day: "Thu", kcal: 2900 }, { day: "Fri", kcal: 2400 }, { day: "Sat", kcal: 3000 }, { day: "Sun", kcal: 2640 }
+  ];
+  var messages = [
+    { role: "assistant", content: "Hello! I'm your personal Nutrition Agent. Tell me your health goals and I'll create a customized meal plan just for you." }
+  ];
+
+  var SYSTEM_PROMPT = "You are the Nutrition Agent, an AI-powered dietary guidance system built on IBM watsonx.ai using IBM Granite models, orchestrated via LangFlow inside IBM watsonx Orchestrate.\n\nYour role is to deliver personalized dietary advice, meal planning, and nutritional analysis based on the user's health profile (age, weight, conditions, allergies, goals).\n\nBehave like a Retrieval-Augmented Generation system grounded in USDA FoodData Central and WHO nutrition guidelines: give specific, plausible calorie counts, macro splits (protein/carbs/fats in grams), and concrete meal-by-meal breakdowns. Always end substantive nutrition answers with a line like \"Source: USDA FoodData Central | WHO Guidelines\".\n\nKeep a supportive, professional, empathetic tone. Keep responses concise and scannable with short headers and bullet points. No markdown code fences.";
+
+  // ---- Elements ----
+  var apiKeyInput = document.getElementById('apiKeyInput');
+  var toggleKeyBtn = document.getElementById('toggleKeyVisibility');
+  var navChat = document.getElementById('navChat');
+  var navDash = document.getElementById('navDash');
+  var chatView = document.getElementById('chatView');
+  var dashView = document.getElementById('dashView');
+  var chatScroll = document.getElementById('chatScroll');
+  var chatForm = document.getElementById('chatForm');
+  var chatInput = document.getElementById('chatInput');
+  var sendBtn = document.getElementById('sendBtn');
+  var barChart = document.getElementById('barChart');
+  var logList = document.getElementById('logList');
+  var statKcal = document.getElementById('statKcal');
+  var suggestionText = document.getElementById('suggestionText');
+  var toggleLogFormBtn = document.getElementById('toggleLogForm');
+  var logForm = document.getElementById('logForm');
+  var mealNameInput = document.getElementById('mealName');
+  var mealDescInput = document.getElementById('mealDesc');
+  var mealKcalInput = document.getElementById('mealKcal');
+
+  // ---- API key show/hide ----
+  toggleKeyBtn.addEventListener('click', function () {
+    if (apiKeyInput.type === 'password') {
+      apiKeyInput.type = 'text';
+      toggleKeyBtn.textContent = 'Hide';
+    } else {
+      apiKeyInput.type = 'password';
+      toggleKeyBtn.textContent = 'Show';
+    }
+  });
+
+  // ---- Nav ----
+  navChat.addEventListener('click', function () {
+    navChat.classList.add('active');
+    navDash.classList.remove('active');
+    chatView.classList.add('active');
+    dashView.classList.remove('active');
+  });
+  navDash.addEventListener('click', function () {
+    navDash.classList.add('active');
+    navChat.classList.remove('active');
+    dashView.classList.add('active');
+    chatView.classList.remove('active');
+  });
+
+  // ---- Chat rendering ----
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function renderMessages() {
+    chatScroll.innerHTML = '';
+    messages.forEach(function (m) {
+      var row = document.createElement('div');
+      row.className = 'msg-row ' + (m.role === 'user' ? 'user' : '');
+      if (m.role === 'assistant') {
+        var av = document.createElement('div');
+        av.className = 'avatar';
+        av.textContent = '🥗';
+        row.appendChild(av);
+      }
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble ' + m.role;
+      bubble.innerHTML = escapeHtml(m.content).replace(/\n/g, '<br/>');
+      row.appendChild(bubble);
+      chatScroll.appendChild(row);
+    });
+    chatScroll.scrollTop = chatScroll.scrollHeight;
+  }
+
+  function showThinking(show) {
+    var existing = document.getElementById('thinkingRow');
+    if (existing) existing.remove();
+    if (show) {
+      var row = document.createElement('div');
+      row.className = 'msg-row';
+      row.id = 'thinkingRow';
+      var av = document.createElement('div');
+      av.className = 'avatar';
+      av.textContent = '🥗';
+      row.appendChild(av);
+      var bubble = document.createElement('div');
+      bubble.className = 'bubble assistant thinking';
+      bubble.textContent = 'Nutrition Agent is thinking…';
+      row.appendChild(bubble);
+      chatScroll.appendChild(row);
+      chatScroll.scrollTop = chatScroll.scrollHeight;
+    }
+  }
+
+  async function callClaude(apiKey, msgs) {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: msgs
+      })
+    });
+    if (!response.ok) {
+      var errText = await response.text();
+      throw new Error(errText);
+    }
+    var data = await response.json();
+    var text = (data.content || []).map(function (b) { return b.type === 'text' ? b.text : ''; }).filter(Boolean).join('\n');
+    return text || "Sorry, I couldn't generate a response just now.";
+  }
+
+  var loading = false;
+
+  // ---- Canned fallback responses (used when no API key, or API call fails) ----
+  var CANNED_RESPONSES = [
+    {
+      match: ["diabetic", "diabetes", "sugar-friendly", "blood sugar"],
+      reply: "Here's a Diabetic-Friendly Dinner:\n\nGrilled Lemon-Herb Chicken with Steamed Vegetables & Quinoa\n\nCalories: 480 kcal\nProtein: 38g | Carbs: 42g (low-GI) | Fats: 16g\n\nWhy it works:\n• Quinoa has a low glycemic index, so it won't spike blood sugar\n• Lean chicken keeps protein high without added fat\n• Non-starchy vegetables (broccoli, zucchini, bell peppers) add fiber and volume\n• No refined sugar or white rice\n\nTip: Pair with a 10–15 minute walk after eating to further stabilize post-meal glucose.\n\nSource: USDA FoodData Central | WHO Guidelines"
+    },
+    {
+      match: ["7-day", "7 day", "weight-loss", "weight loss", "week plan", "meal plan"],
+      reply: "Here's your 7-Day Weight-Loss Plan Overview:\n\nDaily Calorie Target: 1,600–1,800 kcal\nProtein: 110g | Carbs: 150g | Fats: 55g\n\nDay 1 Sample Menu:\nBreakfast: Greek yogurt + berries + chia seeds (310 kcal)\nLunch: Grilled chicken salad with olive oil dressing (420 kcal)\nSnack: Apple + almond butter (180 kcal)\nDinner: Baked salmon + roasted vegetables (450 kcal)\nTotal: ~1,360 kcal (add a snack to hit target)\n\nThis pattern repeats with varied proteins (fish, tofu, chicken, legumes) and vegetables across the week to maintain adherence and nutrient variety.\n\nSource: USDA FoodData Central | WHO Guidelines"
+    },
+    {
+      match: ["plant protein", "vegan protein", "vegetarian protein", "plant-based protein"],
+      reply: "Top Plant-Based Protein Sources:\n\n• Lentils — 18g protein per cooked cup\n• Chickpeas — 15g protein per cooked cup\n• Tofu — 10g protein per 100g\n• Tempeh — 19g protein per 100g\n• Quinoa — 8g protein per cooked cup (complete protein)\n• Edamame — 17g protein per cooked cup\n• Greek-style plant yogurt — 10–15g per serving\n• Chia seeds — 5g protein per 2 tbsp\n\nTip: Combining legumes with grains (like rice + beans) creates a complete amino acid profile similar to animal protein.\n\nSource: USDA FoodData Central | WHO Guidelines"
+    },
+    {
+      match: ["weight-gain", "weight gain", "bulk", "muscle gain", "calorie surplus"],
+      reply: "Here's a Vegetarian Weight-Gain Plan:\n\nDaily Calorie Target: 2,800–3,000 kcal\nProtein: 140g | Carbs: 350g | Fats: 90g\n\nDay 1 Sample Menu:\nBreakfast: Oats + banana + peanut butter smoothie (620 kcal)\nLunch: Paneer tikka + brown rice + dal (780 kcal)\nSnack: Mixed nuts + Greek yogurt (310 kcal)\nDinner: Tofu stir-fry + quinoa + avocado salad (730 kcal)\nTotal: ~2,440 kcal (add a bedtime protein shake: +400 kcal)\n\nSource: USDA FoodData Central | WHO Guidelines"
+    },
+    {
+      match: ["heart", "cholesterol", "cardiac", "blood pressure", "hypertension"],
+      reply: "Heart-Healthy Diet Guidance:\n\nFocus areas:\n• Reduce sodium to under 2,300mg/day (WHO recommends under 2,000mg)\n• Prioritize omega-3 rich foods: salmon, walnuts, flaxseed\n• Increase soluble fiber: oats, beans, apples — helps lower LDL cholesterol\n• Limit saturated fats: swap butter for olive oil\n• Include potassium-rich foods: bananas, spinach, sweet potatoes\n\nSample dinner: Baked salmon + steamed greens + olive oil drizzle + brown rice (~420 kcal, low sodium)\n\nSource: USDA FoodData Central | WHO Guidelines"
+    }
+  ];
+
+  var DEFAULT_REPLY = "Thanks for your question! Based on general nutrition guidance:\n\nA balanced plate typically includes:\n• 1/2 plate non-starchy vegetables\n• 1/4 plate lean protein (chicken, fish, legumes, tofu)\n• 1/4 plate whole grains or starchy vegetables\n• A small portion of healthy fats (olive oil, nuts, avocado)\n\nFor a more specific answer, try asking about a particular health goal — like weight loss, diabetes-friendly meals, or high-protein plant foods.\n\nSource: USDA FoodData Central | WHO Guidelines";
+
+  function getCannedReply(userText) {
+    var lower = userText.toLowerCase();
+    for (var i = 0; i < CANNED_RESPONSES.length; i++) {
+      var entry = CANNED_RESPONSES[i];
+      for (var j = 0; j < entry.match.length; j++) {
+        if (lower.indexOf(entry.match[j]) !== -1) {
+          return entry.reply;
+        }
+      }
+    }
+    return DEFAULT_REPLY;
+  }
+
+  function delay(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  async function send(text) {
+    var content = text !== undefined ? text : chatInput.value;
+    if (!content || !content.trim() || loading) return;
+    var apiKey = apiKeyInput.value.trim();
+    chatInput.value = '';
+
+    messages.push({ role: 'user', content: content });
+    renderMessages();
+    loading = true;
+    sendBtn.disabled = true;
+    showThinking(true);
+
+    try {
+      if (apiKey) {
+        var apiMessages = messages.map(function (m) { return { role: m.role, content: m.content }; });
+        var reply = await callClaude(apiKey, apiMessages);
+        messages.push({ role: 'assistant', content: reply });
+      } else {
+        await delay(700 + Math.random() * 500);
+        messages.push({ role: 'assistant', content: getCannedReply(content) });
+      }
+    } catch (e) {
+      // API failed (bad key, no credit, network) — fall back gracefully instead of showing a raw error
+      await delay(400);
+      messages.push({ role: 'assistant', content: getCannedReply(content) });
+    } finally {
+      loading = false;
+      sendBtn.disabled = false;
+      showThinking(false);
+      renderMessages();
+    }
+  }
+
+  chatForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    send();
+  });
+
+  document.querySelectorAll('.quick-prompts button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      send(btn.getAttribute('data-prompt'));
+    });
+  });
+
+  // ---- Dashboard rendering ----
+  function renderBarChart() {
+    barChart.innerHTML = '';
+    var max = Math.max.apply(null, weekly.map(function (d) { return d.kcal; }));
+    weekly.forEach(function (d) {
+      var col = document.createElement('div');
+      col.className = 'bar-col';
+      var val = document.createElement('div');
+      val.className = 'bar-val';
+      val.textContent = d.kcal;
+      var fill = document.createElement('div');
+      fill.className = 'bar-fill';
+      fill.style.height = Math.max(8, (d.kcal / max) * 130) + 'px';
+      var label = document.createElement('div');
+      label.className = 'bar-label';
+      label.textContent = d.day;
+      col.appendChild(val);
+      col.appendChild(fill);
+      col.appendChild(label);
+      barChart.appendChild(col);
+    });
+  }
+
+  function renderLog() {
+    logList.innerHTML = '';
+    log.forEach(function (m) {
+      var item = document.createElement('div');
+      item.className = 'log-item';
+      item.innerHTML =
+        '<div><div class="meal">' + escapeHtml(m.meal) + '</div><div class="desc">' + escapeHtml(m.desc) + '</div></div>' +
+        '<div class="kcal">' + m.kcal + ' kcal</div>';
+      logList.appendChild(item);
+    });
+    var total = log.reduce(function (s, m) { return s + m.kcal; }, 0);
+    statKcal.textContent = total.toLocaleString();
+    var remaining = TARGET - total;
+    var msg = remaining > 0
+      ? "You're " + remaining + " kcal below your daily target of " + TARGET + ". Consider adding a protein-rich evening snack like cottage cheese (200 kcal) + almonds (160 kcal)."
+      : "You've reached your " + TARGET + " kcal target for today. Great consistency — focus on hydration and a lighter dinner.";
+    suggestionText.textContent = msg + ' Vitamin D intake is low — include fortified milk or sunlight exposure.';
+  }
+
+  toggleLogFormBtn.addEventListener('click', function () {
+    logForm.style.display = logForm.style.display === 'none' ? 'flex' : 'none';
+  });
+
+  logForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var desc = mealDescInput.value.trim();
+    var kcal = Number(mealKcalInput.value);
+    if (!desc || !kcal) return;
+    log.push({ id: Date.now(), meal: mealNameInput.value.trim() || 'Extra', desc: desc, kcal: kcal });
+    mealNameInput.value = '';
+    mealDescInput.value = '';
+    mealKcalInput.value = '';
+    logForm.style.display = 'none';
+    renderLog();
+  });
+
+  // ---- Init ----
+  renderMessages();
+  renderBarChart();
+  renderLog();
+})();
+</script>
+</body>
+</html>
