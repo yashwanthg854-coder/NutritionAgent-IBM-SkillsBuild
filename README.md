@@ -182,8 +182,7 @@ Source: USDA Food Data Central | WHO Protein Guidelines 2023
 ## 👤 Author
 
 **Yashwanth Kumar H C**
-B.E. Electrical and Electronics Engineering, Sri Sairam College of Engineering, Bengaluru (2023–2027)
-
+if you found this project useful, consider giving it a ⭐ on GitHub.
 - 📧 yashwanthg854@gmail.com
 - 🔗 [LinkedIn](https://linkedin.com/in/yashwanth-kumar-h-c-3aabb8307)
 - 💻 [GitHub](https://github.com/yashwanthg854-coder)
